@@ -1,0 +1,7 @@
+Flask==3.0.3
+requests==2.32.3
+beautifulsoup4>=4.15.0
+certifi>=2026.6.17
+tzdata>=2026.2
+pycryptodome>=3.23.0
+hyundai-kia-connect-api

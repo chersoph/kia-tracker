@@ -1,0 +1,1066 @@
+
+<!-- NEW MAP VERSION 2026-07-10 -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kia EV3 trip logger</title>
+    
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='kia--black-color-logo.png') }}">
+    
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <style>
+		input[type="date"] {
+		  width: 100%;
+		  border-radius: 10px;
+		  border: 1px solid var(--border);
+		  padding: 10px 12px;
+		  font-size: 1rem;
+		  background: #fff;
+		  color: var(--text);
+		}
+
+		.range-controls {
+		  margin-top: 8px;
+		}
+    
+      #nightPollToggleBtn {
+        margin-top: 2px;
+        background: #334155;
+        color: #fff;
+      }
+
+      #nightPollToggleBtn:disabled {
+        background: #94a3b8;
+        cursor: not-allowed;
+      }
+      :root {
+        color-scheme: light;
+        --bg: #f4f6f8;
+        --panel: #ffffff;
+        --panel-muted: #f8fafc;
+        --border: #d7dde5;
+        --text: #1f2937;
+        --muted: #5b6472;
+        --accent: #0f766e;
+        --accent-soft: #e6fffb;
+        --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+
+      .title-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 12px;
+        margin: 0 0 8px;
+      }
+
+      .title-row h1 {
+        margin: 0;
+        font-size: 1.8rem;
+        line-height: 1.1;
+      }
+
+      .title-logo {
+        height: 32px;
+        width: auto;
+        flex: 0 0 auto;
+        display: block;
+      }
+
+      .intro {
+        margin: 0 0 16px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        align-items: end;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      label {
+        font-size: 0.92rem;
+        font-weight: 700;
+      }
+
+      select,
+      button {
+        width: 100%;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        padding: 10px 12px;
+        font-size: 1rem;
+        background: #fff;
+      }
+
+      button {
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      button:hover { filter: brightness(0.96); }
+
+      .summary {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .summary-head {
+        padding: 14px;
+        border-radius: 12px;
+        background: var(--accent-soft);
+        border: 1px solid #bdece6;
+      }
+
+      .summary-title {
+        margin: 0 0 6px;
+        font-size: 1.1rem;
+      }
+
+      .summary-text {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .stat {
+        background: var(--panel-muted);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+      }
+
+      .stat-label {
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+
+      .stat-value {
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      .small {
+        color: var(--muted);
+        line-height: 1.5;
+        margin-top: 12px;
+      }
+
+      #map {
+        height: 60vh;
+        min-height: 420px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        overflow: hidden;
+      }
+
+      @media (min-width: 760px) {
+        .controls {
+          grid-template-columns: 1.1fr 1fr auto;
+        }
+
+        .summary-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 640px) {
+        .wrap { padding: 12px; }
+        .panel {
+          padding: 12px;
+          border-radius: 12px;
+        }
+        #map {
+          height: 52vh;
+          min-height: 320px;
+        }
+      }
+      
+
+		input[type="date"],
+		select,
+		button {
+		  font: inherit;
+		}
+
+    </style>
+
+
+</head>
+  <body>
+    <div class="wrap">
+      <div class="title-row">
+        <img
+          src="{{ url_for('static', filename='kia--black-color-logo.png') }}"
+          alt="Kia logo"
+          class="title-logo"
+        />
+        <h1>Kia EV3 trip logger</h1>
+      </div>
+      <p class="intro">
+        Choose a day with stored data, then either view all logged points or a single detected trip.
+        Times are shown in your local browser time.
+      </p>
+
+      <div class="panel">
+        <div class="controls range-controls">
+          <div class="field">
+            <label for="startDay">From</label>
+            <input type="date" id="startDay" />
+          </div>
+      
+          <div class="field">
+            <label for="endDay">To</label>
+            <input type="date" id="endDay" />
+          </div>
+      
+          <div class="field">
+            <label>&nbsp;</label>
+            <button id="loadRangeBtn" type="button">Load period trips</button>
+          </div>
+        </div>
+      
+        <p class="small" id="rangeStatus"></p>
+      
+        <div class="controls">
+          <div class="field">
+            <label for="daySelect">Day</label>
+            <select id="daySelect">
+              <option value="">Loading days...</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="tripSelect">Trip</label>
+            <select id="tripSelect">
+              <option value="">All tracks for day</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>&nbsp;</label>
+            <button id="loadBtn" type="button">Load map</button>
+          </div>
+        </div>
+
+        <div class="small" id="tripMeta">
+          Choose a day, then either view all tracks or a single detected trip.
+        </div>
+
+        <div class="small">
+          <button id="nightPollToggleBtn" type="button">Loading night polling…</button>
+        </div>
+      </div>
+
+      <div class="panel summary">
+        <div class="summary-grid">
+          <div class="summary-head">
+            <h2 class="summary-title" id="summaryTitle">Choose day</h2>
+            <p class="summary-text" id="summaryText">
+              Pick a stored day from the list to load summary details and map tracks.
+            </p>
+          </div>
+
+          <div class="stat">
+            <div class="stat-label">Time span</div>
+            <div class="stat-value" id="timeValue">–</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Start</div>
+            <div class="stat-value" id="startValue">–</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">End</div>
+            <div class="stat-value" id="endValue">–</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Duration</div>
+            <div class="stat-value" id="durationValue">–</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Distance</div>
+            <div class="stat-value" id="distanceValue">–</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Energy</div>
+            <div class="stat-value" id="energyValue">–</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="map"></div>
+    </div>
+
+    <script>
+
+      (function setDefaultRangeDates() {
+        const startInput = document.getElementById("startDay");
+        const endInput = document.getElementById("endDay");
+        if (!startInput || !endInput) return;
+
+        const today = new Date();
+        const xDaysAgo = new Date();
+        xDaysAgo.setDate(today.getDate() - 7);
+
+        const fmt = (d) => d.toISOString().slice(0, 10); // YYYY-MM-DD
+
+        endInput.value = fmt(today);
+        startInput.value = fmt(xDaysAgo);
+      })();
+
+      const map = L.map("map").setView([59.33, 18.07], 10);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors"
+      }).addTo(map);
+
+      let currentLayer = null;
+      let cachedTrips = [];
+      let cachedAllPoints = [];
+      let rangeTrips = [];
+      let rangePoints = [];
+
+      const dayEl = document.getElementById("daySelect");
+      const tripEl = document.getElementById("tripSelect");
+      const loadBtn = document.getElementById("loadBtn");
+      const tripMetaEl = document.getElementById("tripMeta");
+      const nightPollToggleBtn = document.getElementById("nightPollToggleBtn");
+
+      const summaryTitleEl = document.getElementById("summaryTitle");
+      const summaryTextEl = document.getElementById("summaryText");
+      const timeValueEl = document.getElementById("timeValue");
+      const startValueEl = document.getElementById("startValue");
+      const endValueEl = document.getElementById("endValue");
+      const durationValueEl = document.getElementById("durationValue");
+      const distanceValueEl = document.getElementById("distanceValue");
+      const energyValueEl = document.getElementById("energyValue");
+
+async function refreshNightPollToggle() {
+  try {
+    const res = await fetch("/api/night_poll_override");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (!data.night_active) {
+      nightPollToggleBtn.textContent = "Night mode inactive";
+      nightPollToggleBtn.disabled = true;
+      return;
+    }
+
+    nightPollToggleBtn.disabled = false;
+    nightPollToggleBtn.textContent = data.enabled
+      ? `Short polling at night: ON (${data.parked_poll_seconds}s)`
+      : `Short polling at night: OFF (${data.parked_poll_seconds}s)`;
+  } catch (err) {
+    nightPollToggleBtn.textContent = "Night polling unavailable";
+    nightPollToggleBtn.disabled = true;
+  }
+}
+
+nightPollToggleBtn.addEventListener("click", async () => {
+  try {
+    nightPollToggleBtn.disabled = true;
+
+    const currentRes = await fetch("/api/night_poll_override");
+    if (!currentRes.ok) throw new Error(`HTTP ${currentRes.status}`);
+    const current = await currentRes.json();
+
+    const res = await fetch("/api/night_poll_override", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        enabled: !current.enabled
+      })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    await res.json();
+    await refreshNightPollToggle();
+  } catch (err) {
+    nightPollToggleBtn.textContent = "Toggle failed";
+    nightPollToggleBtn.disabled = false;
+  }
+});
+
+      function asDate(ts) {
+        if (!ts) return null;
+        const d = new Date(ts);
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+
+      function fmtDateTime(ts) {
+        const d = asDate(ts);
+        if (!d) return "–";
+        return d.toLocaleString("sv-SE", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      }
+
+      function fmtTime(ts) {
+        const d = asDate(ts);
+        if (!d) return "–";
+        return d.toLocaleTimeString("sv-SE", {
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      }
+
+      function fmtDurationMinutes(mins) {
+        if (mins == null || Number.isNaN(Number(mins))) return "–";
+        const rounded = Math.round(Number(mins));
+        const h = Math.floor(rounded / 60);
+        const m = rounded % 60;
+        if (h === 0) return `${m} min`;
+        if (m === 0) return `${h} h`;
+        return `${h} h ${m} min`;
+      }
+
+      function fmtOdometerKm(value) {
+        if (value == null || Number.isNaN(Number(value))) return "Unknown";
+        return `${Number(value).toFixed(1)} km`;
+      }      
+
+      function fmtKm(km) {
+        if (km == null || Number.isNaN(Number(km))) return "–";
+        return `${Number(km).toFixed(1)} km`;
+      }
+
+      function setSummary(values) {
+        summaryTitleEl.textContent = values.title;
+        summaryTextEl.textContent = values.text;
+        timeValueEl.textContent = values.time ?? "–";
+        startValueEl.textContent = values.start ?? "–";
+        endValueEl.textContent = values.end ?? "–";
+        durationValueEl.textContent = values.duration ?? "–";
+        distanceValueEl.textContent = values.distance ?? "–";
+        energyValueEl.textContent = values.energy ?? "–";
+      }
+
+      function clearMapLayer() {
+        if (currentLayer) {
+          map.removeLayer(currentLayer);
+          currentLayer = null;
+        }
+      }
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function tripLabel(trip) {
+  const base = `Trip ${trip.trip_index}: ${fmtTime(trip.start_ts)}–${fmtTime(trip.end_ts)}`;
+
+  if (trip.kind === "charge") {
+    const parts = [
+      base,
+      fmtDurationMinutes(trip.duration_minutes)
+    ];
+
+    if (trip.charge_gain_percent != null) {
+      parts.push(`charge +${Number(trip.charge_gain_percent).toFixed(1)}%`);
+    }
+
+    if (trip.energy_kwh != null) {
+      parts.push(`${Number(trip.energy_kwh).toFixed(1)} kWh`);
+    }
+
+    return parts.join(" · ");
+  }
+
+  const parts = [
+    base,
+    fmtKm(trip.distance_km),
+    fmtDurationMinutes(trip.duration_minutes)
+  ];
+
+  if (trip.kwh_per_km != null) {
+    parts.push(`${(trip.kwh_per_km * 100).toFixed(1)} kWh/100 km`);
+  }
+
+  return parts.join(" · ");
+}
+
+function buildSummaryForTrip(day, points, trip) {
+  if (trip.kind === "charge") {
+    const chargeText = trip.charge_gain_percent != null
+      ? `Charge +${Number(trip.charge_gain_percent).toFixed(1)}%`
+      : "Charging stop";
+
+    const energyText = trip.energy_kwh != null
+      ? `${Number(trip.energy_kwh).toFixed(1)} kWh added`
+      : "";
+
+    setSummary({
+      title: `Charge stop ${trip.trip_index} on ${day}`,
+      text: `${fmtTime(trip.start_ts)}–${fmtTime(trip.end_ts)} in local browser time.`,
+      points: String(points.length),
+      time: `${fmtTime(trip.start_ts)}–${fmtTime(trip.end_ts)}`,
+      start: trip.start_location_name || fmtDateTime(trip.start_ts),
+      end: trip.end_location_name || fmtDateTime(trip.end_ts),
+      duration: fmtDurationMinutes(trip.duration_minutes),
+      distance: "0.0 km",
+      energy: energyText || chargeText
+    });
+    return;
+  }
+
+  const efficiency = trip.kwh_per_km != null
+    ? `${(trip.kwh_per_km * 100).toFixed(1)} kWh/100 km`
+    : "";
+
+  setSummary({
+    title: `Trip ${trip.trip_index} on ${day}`,
+    text: `${fmtTime(trip.start_ts)}–${fmtTime(trip.end_ts)} in local browser time.`,
+    points: String(points.length),
+    time: `${fmtTime(trip.start_ts)}–${fmtTime(trip.end_ts)}`,
+    start: trip.start_location_name || fmtDateTime(trip.start_ts),
+    end: trip.end_location_name || fmtDateTime(trip.end_ts),
+    duration: fmtDurationMinutes(trip.duration_minutes),
+    distance: fmtKm(trip.distance_km),
+    energy: efficiency
+  });
+}
+function buildTripMeta(trips) {
+  if (!trips.length) {
+    tripMetaEl.textContent = "No segmented trips found for this day. You can still view all stored points.";
+    return;
+  }
+
+  tripMetaEl.innerHTML = trips.map(trip => {
+    const start = escapeHtml(trip.start_location_name || "Start");
+    const end = escapeHtml(trip.end_location_name || "End");
+
+    if (trip.kind === "charge") {
+      const parts = [fmtDurationMinutes(trip.duration_minutes)];
+
+      if (trip.charge_gain_percent != null) {
+        parts.push(`charge +${Number(trip.charge_gain_percent).toFixed(1)}%`);
+      }
+
+      if (trip.energy_kwh != null) {
+        parts.push(`${Number(trip.energy_kwh).toFixed(1)} kWh`);
+      }
+
+      return `Trip ${trip.trip_index}: ${start} → ${end}, ${parts.join(", ")}`;
+    }
+
+    const parts = [
+      fmtKm(trip.distance_km),
+      fmtDurationMinutes(trip.duration_minutes)
+    ];
+
+    if (trip.kwh_per_km != null) {
+      parts.push(`${(trip.kwh_per_km * 100).toFixed(1)} kWh/100 km`);
+    }
+
+    return `Trip ${trip.trip_index}: ${start} → ${end}, ${parts.join(", ")}`;
+  }).join("<br>");
+}
+
+async function loadDays() {
+  const res = await fetch("/api/days");
+  const days = await res.json();
+
+  dayEl.innerHTML = "";
+  if (!Array.isArray(days) || days.length === 0) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No stored days found";
+    dayEl.appendChild(option);
+
+    setSummary({
+      title: "No data yet",
+      text: "The tracker has not stored any day with points yet.",
+      points: "0",
+      time: "–",
+      start: "–",
+      end: "–",
+      duration: "–",
+      distance: "–"
+    });
+    return false;
+  }
+
+  for (const day of days) {
+    const option = document.createElement("option");
+    option.value = day.day;
+    option.textContent = `${day.day}`;
+    dayEl.appendChild(option);
+  }
+
+  return true;
+}
+
+function pointBelongsToTrip(point, trip) {
+  return (
+    point.id >= trip.start_point_id &&
+    point.id <= trip.end_point_id
+  );
+}
+
+function renderRangeMap(trips, points) {
+  clearMapLayer();
+
+  const group = L.featureGroup();
+
+  for (const trip of trips) {
+    const tripPoints = points.filter((p) =>
+      p.lat != null &&
+      p.lon != null &&
+      pointBelongsToTrip(p, trip)
+    );
+
+    if (!tripPoints.length) continue;
+
+    const latlngs = tripPoints.map((p) => [p.lat, p.lon]);
+    const isSelected = tripEl.value === String(trip.trip_index) && dayEl.value === trip.day;
+
+    const layer = L.polyline(latlngs, {
+      color: isSelected ? "#dc2626" : "#0f766e",
+      weight: isSelected ? 6 : 4,
+      opacity: isSelected ? 0.95 : 0.65
+    }).addTo(group);
+
+    layer.bindPopup(
+      `<strong>${escapeHtml(trip.day)} · Trip ${escapeHtml(trip.trip_index)}</strong><br>` +
+      `${escapeHtml(fmtTime(trip.start_ts))}–${escapeHtml(fmtTime(trip.end_ts))}<br>` +
+      `${escapeHtml(fmtKm(trip.distance_km))}`
+    );
+
+    layer.on("click", async () => {
+      dayEl.value = trip.day;
+      await loadTripsForDay(trip.day);
+      tripEl.value = String(trip.trip_index);
+      await loadMap();
+    });
+  }
+
+  currentLayer = group.addTo(map);
+
+  const bounds = group.getBounds();
+  if (bounds.isValid()) {
+    map.fitBounds(bounds, { padding: [24, 24] });
+  }
+}
+
+document.getElementById("loadRangeBtn").addEventListener("click", async () => {
+  const startDay = document.getElementById("startDay").value;
+  const endDay = document.getElementById("endDay").value;
+  const status = document.getElementById("rangeStatus");
+
+  if (!startDay || !endDay) {
+    status.textContent = "Choose both a start date and an end date.";
+    return;
+  }
+
+  if (startDay > endDay) {
+    status.textContent = "Start date must be before or equal to end date.";
+    return;
+  }
+
+  status.textContent = "Loading trips on map...";
+
+  const tripsRes = await fetch(`/api/trips_range?start_day=${startDay}&end_day=${endDay}`);
+  const trips = await tripsRes.json();
+
+  if (!tripsRes.ok) {
+    status.textContent = trips.error || "Could not load trips.";
+    return;
+  }
+
+  if (!Array.isArray(trips) || !trips.length) {
+    rangeTrips = [];
+    rangePoints = [];
+    clearMapLayer();
+    status.textContent = "No trips found in that period.";
+    return;
+  }
+
+  const uniqueDays = [...new Set(trips.map((t) => t.day))];
+  const pointResults = await Promise.all(
+    uniqueDays.map(async (day) => {
+      const res = await fetch(`/api/points?day=${encodeURIComponent(day)}`);
+      return await res.json();
+    })
+  );
+
+  rangeTrips = trips;
+  rangePoints = pointResults.flat().filter((p) => p && p.id != null);
+
+  status.textContent = `${trips.length} trip(s) shown on map. Click a route to load its trip details.`;
+  renderRangeMap(rangeTrips, rangePoints);
+});
+async function loadTripsForDay(day) {
+  tripEl.innerHTML = '<option value="">All points for day</option>';
+  cachedTrips = [];
+  cachedAllPoints = [];
+
+  if (!day) {
+    buildTripMeta([]);
+    return;
+  }
+
+  const [tripsRes, pointsRes] = await Promise.all([
+    fetch(`/api/trips?day=${encodeURIComponent(day)}`),
+    fetch(`/api/points?day=${encodeURIComponent(day)}`)
+  ]);
+
+  const trips = await tripsRes.json();
+  const points = await pointsRes.json();
+
+  cachedTrips = Array.isArray(trips) ? trips : [];
+  cachedAllPoints = Array.isArray(points) ? points : [];
+
+  for (const trip of cachedTrips) {
+    const option = document.createElement("option");
+    option.value = trip.trip_index;
+    option.textContent = tripLabel(trip);
+    tripEl.appendChild(option);
+  }
+
+  buildTripMeta(cachedTrips);
+}
+
+function renderMap(points, trips = [], showTripMarkers = false) {
+  clearMapLayer();
+
+  const group = L.featureGroup();
+  const selectedTripIndex = tripEl.value ? String(tripEl.value) : "";
+
+  if (showTripMarkers && Array.isArray(trips) && trips.length) {
+    trips.forEach((trip) => {
+      const tripPoints = cachedAllPoints.filter((p) =>
+        p.id >= trip.start_point_id &&
+        p.id <= trip.end_point_id &&
+        p.lat != null &&
+        p.lon != null
+      );
+
+      if (!tripPoints.length) return;
+
+      const tripLatLngs = tripPoints.map((p) => [p.lat, p.lon]);
+      const isSelected = selectedTripIndex === String(trip.trip_index);
+
+      const layer = L.polyline(tripLatLngs, {
+        color: isSelected ? "#dc2626" : "#0f766e",
+        weight: isSelected ? 6 : 4,
+        opacity: isSelected ? 0.95 : 0.5
+      }).addTo(group);
+
+      layer.bindPopup(
+        `<strong>Trip ${escapeHtml(trip.trip_index)}</strong><br>` +
+        `${escapeHtml(fmtTime(trip.start_ts))}–${escapeHtml(fmtTime(trip.end_ts))}<br>` +
+        `${escapeHtml(fmtKm(trip.distance_km))}`
+      );
+
+      layer.on("click", async () => {
+        tripEl.value = String(trip.trip_index);
+        await loadMap();
+      });
+
+      if (trip.start_lat != null && trip.start_lon != null) {
+        L.circleMarker([trip.start_lat, trip.start_lon], {
+          radius: isSelected ? 7 : 5,
+          color: "#166534",
+          weight: 2,
+          fillColor: "#22c55e",
+          fillOpacity: isSelected ? 1 : 0.7
+        })
+          .addTo(group)
+          .bindPopup(
+            `<strong>Trip ${escapeHtml(trip.trip_index)} start</strong><br>` +
+            `<strong>${escapeHtml(fmtDateTime(trip.start_ts))}</strong><br>` +
+            `${escapeHtml(trip.start_location_name || "Unknown location")}<br>` +
+            `Odometer: ${escapeHtml(fmtOdometerKm(trip.start_odometer_km))}`
+          );
+      }
+
+      if (trip.end_lat != null && trip.end_lon != null) {
+        L.circleMarker([trip.end_lat, trip.end_lon], {
+          radius: isSelected ? 7 : 5,
+          color: "#991b1b",
+          weight: 2,
+          fillColor: "#ef4444",
+          fillOpacity: isSelected ? 1 : 0.7
+        })
+          .addTo(group)
+          .bindPopup(
+            `<strong>Trip ${escapeHtml(trip.trip_index)} end</strong><br>` +
+            `<strong>${escapeHtml(fmtDateTime(trip.end_ts))}</strong><br>` +
+            `${escapeHtml(trip.end_location_name || "Unknown location")}<br>` +
+            `Odometer: ${escapeHtml(fmtOdometerKm(trip.end_odometer_km))}`
+          );
+      }
+    });
+
+    currentLayer = group.addTo(map);
+
+    const bounds = group.getBounds();
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [24, 24] });
+    }
+
+    return;
+  }
+
+  if (!Array.isArray(points) || points.length === 0) {
+    return;
+  }
+
+  const validPoints = points.filter((p) => p.lat != null && p.lon != null);
+  if (!validPoints.length) {
+    return;
+  }
+
+  const latlngs = validPoints.map((p) => [p.lat, p.lon]);
+
+  if (latlngs.length > 1) {
+    L.polyline(latlngs, {
+      color: "#dc2626",
+      weight: 6,
+      opacity: 0.95
+    }).addTo(group);
+  }
+
+  if (validPoints.length === 1) {
+    const point = validPoints[0];
+    L.circleMarker(latlngs[0], {
+      radius: 7,
+      color: "#166534",
+      weight: 2,
+      fillColor: "#22c55e",
+      fillOpacity: 1
+    })
+      .bindPopup(
+        `<strong>Point</strong><br>` +
+        `<strong>${escapeHtml(fmtDateTime(point.ts))}</strong><br>` +
+        `${escapeHtml(point.location_name || "Unknown location")}<br>` +
+        `Odometer: ${escapeHtml(fmtOdometerKm(point.odometer_km))}`
+      )
+      .addTo(group);
+  } else {
+    const startPoint = validPoints[0];
+    const endPoint = validPoints[validPoints.length - 1];
+
+    L.circleMarker(latlngs[0], {
+      radius: 7,
+      color: "#166534",
+      weight: 2,
+      fillColor: "#22c55e",
+      fillOpacity: 1
+    })
+      .bindPopup(
+        `<strong>Start</strong><br>` +
+        `<strong>${escapeHtml(fmtDateTime(startPoint.ts))}</strong><br>` +
+        `${escapeHtml(startPoint.location_name || "Unknown location")}<br>` +
+        `Odometer: ${escapeHtml(fmtOdometerKm(startPoint.odometer_km))}`
+      )
+      .addTo(group);
+
+    L.circleMarker(latlngs[latlngs.length - 1], {
+      radius: 7,
+      color: "#991b1b",
+      weight: 2,
+      fillColor: "#ef4444",
+      fillOpacity: 1
+    })
+      .bindPopup(
+        `<strong>End</strong><br>` +
+        `<strong>${escapeHtml(fmtDateTime(endPoint.ts))}</strong><br>` +
+        `${escapeHtml(endPoint.location_name || "Unknown location")}<br>` +
+        `Odometer: ${escapeHtml(fmtOdometerKm(endPoint.odometer_km))}`
+      )
+      .addTo(group);
+  }
+
+  currentLayer = group.addTo(map);
+
+  const bounds = group.getBounds();
+  if (bounds.isValid()) {
+    map.fitBounds(bounds, { padding: [24, 24] });
+  } else if (latlngs.length === 1) {
+    map.setView(latlngs[0], 14);
+  }
+}
+function buildSummaryForDay(day, summary) {
+  const efficiency = summary.kwh_per_km != null
+    ? `${(summary.kwh_per_km * 100).toFixed(1)} kWh/100 km`
+    : "–";
+
+  setSummary({
+    title: `All points for ${day}`,
+    text: "This view shows every stored point for the selected day.",
+    points: "–",
+    time: summary.start_ts && summary.end_ts ? `${fmtTime(summary.start_ts)}–${fmtTime(summary.end_ts)}` : "–",
+    start: summary.start_location?.name || fmtDateTime(summary.start_ts),
+    end: summary.end_location?.name || fmtDateTime(summary.end_ts),
+    duration: fmtDurationMinutes(summary.duration_minutes),
+    distance: fmtKm(summary.distance_km),
+    energy: efficiency
+  });
+}
+
+async function loadMap() {
+  const day = dayEl.value;
+
+  if (!day) {
+    setSummary({
+      title: "Choose day",
+      text: "Pick a stored day before loading the map.",
+      points: "",
+      time: "",
+      start: "",
+      end: "",
+      duration: "",
+      distance: "",
+      energy: ""
+    });
+    clearMapLayer();
+    return;
+  }
+
+  await refreshTripsKeepingSelection(day);
+
+  const tripIndex = tripEl.value;
+
+  if (!tripIndex) {
+    const [pointsRes, summaryRes] = await Promise.all([
+      fetch(`/api/points?day=${encodeURIComponent(day)}`),
+      fetch(`/api/summary?day=${encodeURIComponent(day)}`)
+    ]);
+
+    const points = await pointsRes.json();
+    const summary = await summaryRes.json();
+
+    buildSummaryForDay(day, summary);
+    renderMap(points, cachedTrips, true);
+    return;
+  }
+
+  const pointsRes = await fetch(`/api/points?day=${encodeURIComponent(day)}&trip_index=${encodeURIComponent(tripIndex)}`);
+  const points = await pointsRes.json();
+  const trip = cachedTrips.find(t => String(t.trip_index) === String(tripIndex));
+
+  if (!trip) {
+    setSummary({
+      title: "Trip not found",
+      text: "The selected trip was not found for this day.",
+      points: "0",
+      time: "",
+      start: "",
+      end: "",
+      duration: "",
+      distance: "",
+      energy: ""
+    });
+    clearMapLayer();
+    return;
+  }
+
+  buildSummaryForTrip(day, points, trip);
+  renderMap(points, cachedTrips, true);
+}
+
+async function refreshTripsKeepingSelection(day) {
+  const previousValue = tripEl.value;
+  await loadTripsForDay(day);
+
+  if (!previousValue) {
+    tripEl.value = "";
+    return;
+  }
+
+  const optionExists = Array.from(tripEl.options).some(opt => opt.value === previousValue);
+  tripEl.value = optionExists ? previousValue : "";
+}
+
+dayEl.addEventListener("change", async () => {
+  await loadTripsForDay(dayEl.value);
+  tripEl.value = "";
+  await loadMap();
+});
+
+loadBtn.addEventListener("click", loadMap);
+
+setInterval(refreshNightPollToggle, 30000);
+
+(async function init() {
+  await refreshNightPollToggle();
+
+  const hasDays = await loadDays();
+  if (!hasDays) return;
+
+  await loadTripsForDay(dayEl.value);
+  await loadMap();
+})();
+    </script>
+  </body>
+</html>
