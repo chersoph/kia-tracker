@@ -33,7 +33,7 @@ account with your vehicle registered.
 1. Create a working directory and download the example files:
    ```bash
    mkdir kia-trip-logger && cd kia-trip-logger
-   curl -O https://raw.githubusercontent.com/chersoph/kia-tracker/main/sidecar/.env.example
+   curl -O https://raw.githubusercontent.com/chersoph/kia-tracker/main/.env.example
    cp .env.example .env
    ```
 
@@ -70,7 +70,7 @@ account with your vehicle registered.
 ## Configuration
 
 All settings are controlled via environment variables — see
-[`sidecar/.env.example`](sidecar/.env.example) for the full list with
+[`.env.example`](.env.example) for the full list with
 descriptions, covering:
 
 - Kia account credentials and region/brand
