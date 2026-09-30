@@ -2,3 +2,4 @@
 *.db
 *.sqlite
 *.old
+data/
